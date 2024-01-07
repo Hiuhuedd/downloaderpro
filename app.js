@@ -24,18 +24,29 @@ const firebaseApp = initializeApp(firebaseConfig);
 const storage = getStorage(firebaseApp);
 
 app.get('/download', async (req, res) => {
-    console.log(req.query.url);
   try {
-    // const videoUrl = "https://youtu.be/bWycnVL6_dE?si=Vj2zcToTPTODyzOE";
     const videoUrl = req.query.url;
 
     if (!ytdl.validateURL(videoUrl)) {
       throw new Error('Invalid YouTube URL');
     }
 
+    // Get video information
     const info = await ytdl.getInfo(videoUrl);
-    const format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'audioandvideo', });
+    
+    // Access video details
+    const title = info.videoDetails.title;
+    const description = info.videoDetails.description;
+    const thumbnails = info.videoDetails.thumbnails;
 
+    console.log('Video Title:', title);
+    console.log('Video Description:', description);
+    console.log('Thumbnails:', thumbnails);
+
+    // Choose the format for downloading
+    const format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'audioandvideo' });
+
+    // Download the video stream
     const videoStream = ytdl(videoUrl, { format });
 
     // Convert stream to buffer
@@ -47,13 +58,20 @@ app.get('/download', async (req, res) => {
     videoStream.on('end', async () => {
       const videoBuffer = Buffer.concat(chunks);
 
-      const fileRef = ref(storage, `videos/${info.title}.mp4`);
+      // Upload the video to Firebase Storage
+      const fileRef = ref(storage, `videos/${title}.mp4`);
       await uploadBytes(fileRef, videoBuffer);
 
+      // Get the download URL
       const downloadURL = await getDownloadURL(fileRef);
 
       console.log('Firebase Storage download URL:', downloadURL);
-      res.status(200).send(downloadURL);
+      res.status(200).json({
+        title,
+        description,
+        thumbnails,
+        downloadURL
+      });
     });
   } catch (error) {
     console.error(error.message);
