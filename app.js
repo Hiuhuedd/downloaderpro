@@ -138,14 +138,16 @@ app.get('/download', async (req, res) => {
 
     // Download the video stream
     const videoStream = ytdl(videoUrl, { format });
-
+    if (videoStream) {
+      console.log("Downloaded the video stream");
+    }
     // Create a write stream to save the file to the server
     const filePath = path.join(videosDirectory, `${title}.mp4`);
     const writeStream = fs.createWriteStream(filePath);
-
-    // Pipe the video stream to the write stream
+  
     videoStream.pipe(writeStream);
-
+    console.log("piping the video stream");
+    
     // Wait for the write stream to finish
     writeStream.on('finish', () => {
       console.log('Download completed');
