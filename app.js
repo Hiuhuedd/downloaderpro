@@ -104,6 +104,9 @@ const port = 3000;
 // Increase the timeout to 10 minutes (adjust as needed)
 app.timeout = 600000; // 10 minutes in milliseconds
 
+// Assuming you have a static directory for serving videos
+app.use('/videos', express.static(path.join(__dirname, 'videos')));
+
 app.get('/download', async (req, res) => {
   const startTime = Date.now();
 
@@ -153,11 +156,12 @@ app.get('/download', async (req, res) => {
       console.log(`Download time: ${downloadTime} ms`);
 
       // Set response headers
+      const publicUrl = `${req.protocol}://${req.get('host')}/videos/${title}.mp4`;
       res.status(200).json({
         title,
         description,
         thumbnails,
-        filePath // Send the file path for potential access or further processing
+        filePath: publicUrl // Send the public URL for the client to access the file
       });
     });
 
